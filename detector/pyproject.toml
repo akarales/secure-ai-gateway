@@ -1,0 +1,20 @@
+[project]
+name = "phi-detector"
+version = "0.1.0"
+description = "Presidio PHI detection sidecar for the Secure AI Gateway"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi==0.141.1",
+    "uvicorn[standard]==0.54.0",
+    "pydantic==2.13.5",
+    "presidio-analyzer==2.2.362",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "httpx==0.28.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
