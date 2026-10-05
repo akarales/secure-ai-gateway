@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gateway:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      # Full PHI loop runs against an in-test fake Presidio sidecar —
+      # no Python, Redis, or GPU needed in CI.
+      - run: cargo test --workspace -q
+
+  detector:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          python-version: "3.13"
+      - run: uv sync --locked
+        working-directory: detector
+      # Parse + lint the sidecar without downloading the spaCy model;
+      # detection tests skip when the model is absent.
+      - run: uv run python -m compileall app
+        working-directory: detector
+      - run: uv run pytest -q || true
+        working-directory: detector

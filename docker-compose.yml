@@ -1,0 +1,41 @@
+services:
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  detector:
+    build:
+      context: ./detector
+      dockerfile: Dockerfile
+    ports:
+      - "8006:8006"
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8005"
+    environment:
+      APP_DETECTOR_URL: http://detector:8006
+      APP_REDIS_URL: redis://redis:6379
+      APP_REDIS_STUB: "false"
+      APP_MODEL_STUB: "true"   # swap to false with a reachable Ollama
+      APP_AUDIT_PATH: /data/audit.jsonl
+    volumes:
+      - audit:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+      detector:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  audit:
